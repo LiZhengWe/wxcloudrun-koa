@@ -4,7 +4,7 @@ const logger = require("koa-logger");
 const bodyParser = require("koa-bodyparser");
 const fs = require("fs");
 const path = require("path");
-const { init: initDB, Counter } = require("./db");
+const { init: initDB, Counter, User } = require("./db");
 
 const router = new Router();
 
@@ -14,6 +14,47 @@ const homePage = fs.readFileSync(path.join(__dirname, "index.html"), "utf-8");
 router.get("/", async (ctx) => {
   ctx.body = homePage;
 });
+
+router.get("/api/user", async (ctx) => {
+  const { request } = ctx;
+  // const users = await User.findAll()
+  const num = await User.count();
+  console.log('22222222222222', 'user：', num, request.query["id"]);
+
+  ctx.body = await User.findOne({
+    where: {
+      wx_id: request.query["id"],
+    }
+  });
+})
+
+router.post("/api/addUser", async (ctx)=> {
+  const { request } = ctx;
+  const { name, role, phone, wx_id } = request.body;
+
+  console.log(ctx, request.body);
+
+  try {
+    await User.create({
+      name,
+      role,
+      phone,
+      wx_id,
+      createAt: new Date(),
+    });
+
+    ctx.body = {
+      code: 1,
+      msg: '保存成功'
+    };
+  } catch {
+    ctx.body = {
+      code: 200,
+      msg: "保存失败"
+    }
+  }
+  
+})
 
 // 更新计数
 router.post("/api/count", async (ctx) => {
@@ -57,7 +98,7 @@ app
   .use(router.routes())
   .use(router.allowedMethods());
 
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 8017;
 async function bootstrap() {
   await initDB();
   app.listen(port, () => {
